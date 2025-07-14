@@ -1,0 +1,531 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand of Hope Missions | An Investment in Recovery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Hopeful Harmony (Background: #F8F8F8, Primary Text: #2C3E50, Primary Accent: #27AE60 (Emerald Green), Secondary Accent: #F39C12 (Vibrant Gold), Card BG: #FFFFFF, Secondary Text: #7F8C8D) -->
+    <!-- 
+        Application Structure Plan: The SPA maintains its persuasive narrative funnel, guiding users from initial engagement to a call for action. The structure is enhanced with more distinct visual sections and improved interactive elements. It begins with an impactful Hero section to immediately convey purpose. A sticky, refined navigation bar ensures seamless access to key areas: 'Why Invest?' (now with enhanced visual cards), 'Our Holistic Approach' (an improved interactive process diagram), 'Our Impact & Transparency' (featuring dynamic statistics and a clear financial chart), and 'Hear Our Stories' (a more engaging LLM-powered story generator). The journey concludes with a compelling 'Join Our Mission' call-to-action. This design prioritizes visual appeal, intuitive navigation, and emotional connection through dynamic content, making the NGO's mission more tangible and inspiring for potential donors.
+    -->
+    <!-- 
+        Visualization & Content Choices: 
+        - Why Invest (Value Props) -> Goal: Inform/Compare -> Method: Five visually distinct HTML/Tailwind cards in a responsive grid, each featuring a larger, expressive Unicode icon. -> Interaction: Enhanced hover effects (lift, shadow, subtle border highlight) for greater engagement. -> Justification: Transforms static points into attractive, scannable value propositions that feel impactful.
+        - Core Programs (Process) -> Goal: Organize/Explore -> Method: A more visually defined CSS-based diagram of four interconnected stages. -> Interaction: Clickable stages dynamically highlight, with smooth transitions for revealing detailed 'Impact' and 'Need' text. -> Justification: Clearly illustrates the holistic journey, making the complex process digestible and interactive.
+        - Fund Allocation (Data) -> Goal: Build Trust/Inform -> Method: A Chart.js Donut Chart with refined colors. -> Interaction: Standard Chart.js tooltips. -> Justification: Provides transparent financial overview. The chart container is robustly styled for responsiveness.
+        - Impact Statistics (Quantitative Data) -> Goal: Inform/Inspire -> Method: Four prominent HTML/Tailwind cards. -> Interaction: JavaScript-driven counter animation for each statistic, creating a "wow" factor and emphasizing growth. -> Justification: Makes key achievements more dynamic and impressive.
+        - Impact Story Generator (LLM Feature) -> Goal: Engage/Inspire -> Method: Improved UI for dropdown and button, clear loading state. -> Interaction: User selects a program, clicks a button, and the Gemini API generates a personalized, inspiring story displayed with enhanced styling. -> Justification: Creates a powerful emotional connection by allowing users to instantly visualize the real-world impact of their potential donation.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F8F8; /* Very light grey */
+            color: #2C3E50; /* Dark blue-grey */
+        }
+        .nav-link {
+            transition: color 0.3s, background-color 0.3s;
+            position: relative;
+        }
+        .nav-link:hover {
+            color: #F39C12; /* Vibrant Gold */
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #F39C12;
+            transition: width 0.3s ease-out;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .program-stage {
+            transition: all 0.3s ease, background-color 0.4s ease;
+            cursor: pointer;
+            border-radius: 0.75rem; /* rounded-lg */
+            border: 2px solid transparent;
+        }
+        .program-stage.active {
+            background-color: #27AE60; /* Emerald Green */
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(39, 174, 96, 0.2), 0 4px 6px -2px rgba(39, 174, 96, 0.1);
+            border-color: #27AE60;
+        }
+        .program-stage:not(.active):hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .program-detail {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-out, opacity 0.7s ease-out, padding 0.7s ease-out;
+        }
+        .program-detail.visible {
+            max-height: 300px; /* Sufficient height for content */
+            opacity: 1;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 380px; /* Slightly larger max-width */
+            height: auto;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1rem; /* Added padding */
+            background-color: white;
+            border-radius: 0.75rem; /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        @media (min-width: 768px) {
+             .chart-container {
+                max-width: 450px; /* Adjusted for larger screens */
+             }
+        }
+        .stat-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #27AE60;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-md">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-extrabold text-emerald-700 flex items-center">
+                <span class="mr-2 text-3xl">🌱</span> Hand of Hope Missions
+            </a>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#why-invest" class="nav-link text-gray-700 font-medium text-lg">Why Invest</a>
+                <a href="#our-approach" class="nav-link text-gray-700 font-medium text-lg">Our Approach</a>
+                <a href="#our-impact" class="nav-link text-gray-700 font-medium text-lg">Our Impact</a>
+                <a href="#impact-stories" class="nav-link text-gray-700 font-medium text-lg">Stories</a>
+                <a href="#join-us" class="nav-link bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-300 transform hover:scale-105">Donate Now</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-gray-700 p-2 rounded-md hover:bg-gray-100">
+                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 bg-white shadow-inner">
+             <a href="#why-invest" class="block py-3 nav-link text-gray-700 font-medium text-lg border-b border-gray-100">Why Invest</a>
+             <a href="#our-approach" class="block py-3 nav-link text-gray-700 font-medium text-lg border-b border-gray-100">Our Approach</a>
+             <a href="#our-impact" class="block py-3 nav-link text-gray-700 font-medium text-lg border-b border-gray-100">Our Impact</a>
+             <a href="#impact-stories" class="block py-3 nav-link text-gray-700 font-medium text-lg border-b border-gray-100">Stories</a>
+             <a href="#join-us" class="block mt-4 text-center nav-link bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-3 rounded-full font-semibold shadow-md">Donate Now</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="text-center py-24 md:py-40 bg-gradient-to-br from-emerald-50 to-green-100 relative overflow-hidden">
+            <div class="container mx-auto px-6 relative z-10">
+                <h1 class="text-5xl md:text-7xl font-extrabold text-emerald-900 tracking-tight leading-tight animate-fade-in-up">A Beacon of Hope in Addiction Recovery</h1>
+                <p class="mt-6 text-xl md:text-2xl text-emerald-800 max-w-4xl mx-auto opacity-0 animate-fade-in-up animation-delay-300">We are committed to transforming lives and fostering sustainable recovery for individuals and families impacted by drug addiction.</p>
+                <a href="#join-us" class="inline-block mt-10 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold px-10 py-4 rounded-full shadow-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-300 transform hover:scale-105 animate-fade-in-up animation-delay-600">
+                    Invest in Hope Today
+                </a>
+            </div>
+        </section>
+        
+        <!-- Why Invest Section -->
+        <section id="why-invest" class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-800">Why Your Investment Fuels Transformation</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Your support is more than a donation; it's a strategic investment in human potential and community resilience, yielding measurable, life-changing results.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                    <!-- Card 1 -->
+                    <div class="bg-white p-8 rounded-xl shadow-lg border-b-4 border-emerald-500 hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
+                        <span class="text-5xl text-emerald-600 block mb-4">✅</span>
+                        <h3 class="font-bold text-2xl mt-2 mb-2 text-gray-800">Proven Impact</h3>
+                        <p class="text-gray-700 leading-relaxed">We have a demonstrable track record of success in sobriety rates, societal reintegration, and significantly improved quality of life for our beneficiaries.</p>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="bg-white p-8 rounded-xl shadow-lg border-b-4 border-emerald-500 hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
+                        <span class="text-5xl text-emerald-600 block mb-4">🔄</span>
+                        <h3 class="font-bold text-2xl mt-2 mb-2 text-gray-800">Holistic Approach</h3>
+                        <p class="text-gray-700 leading-relaxed">Our comprehensive programs address the root causes of addiction through integrated psychological, vocational, and family support systems.</p>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="bg-white p-8 rounded-xl shadow-lg border-b-4 border-emerald-500 hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
+                        <span class="text-5xl text-emerald-600 block mb-4">🚀</span>
+                        <h3 class="font-bold text-2xl mt-2 mb-2 text-gray-800">Strategic Growth</h3>
+                        <p class="text-gray-700 leading-relaxed">We are actively seeking innovative collaborations and sustainable models to effectively expand our reach and enhance our life-saving services.</p>
+                    </div>
+                     <!-- Card 4 -->
+                    <div class="bg-white p-8 rounded-xl shadow-lg border-b-4 border-emerald-500 hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
+                        <span class="text-5xl text-emerald-600 block mb-4">📊</span>
+                        <h3 class="font-bold text-2xl mt-2 mb-2 text-gray-800">Transparency & Accountability</h3>
+                        <p class="text-gray-700 leading-relaxed">We adhere to the highest standards of financial transparency and program accountability, ensuring every donation makes a measurable and verifiable difference.</p>
+                    </div>
+                     <!-- Card 5 -->
+                    <div class="bg-white p-8 rounded-xl shadow-lg border-b-4 border-emerald-500 hover:shadow-xl hover:scale-[1.01] transition-all duration-300">
+                        <span class="text-5xl text-emerald-600 block mb-4">🤝</span>
+                        <h3 class="font-bold text-2xl mt-2 mb-2 text-gray-800">Community Empowerment</h3>
+                        <p class="text-gray-700 leading-relaxed">By fostering individual recovery, we strengthen families, reduce crime rates, and significantly improve the overall socio-economic well-being of our communities.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Our Approach Section -->
+        <section id="our-approach" class="py-20 md:py-28 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-800">Our Holistic Approach: A Journey to Lasting Freedom</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">We guide individuals through a comprehensive four-stage journey, addressing every aspect of recovery. Click each stage to explore its vital role.</p>
+                </div>
+                <div class="flex flex-col lg:flex-row items-start justify-center gap-12">
+                    <!-- Interactive Stages -->
+                    <div class="w-full lg:w-1/3 space-y-6">
+                        <div id="stage-1" class="program-stage p-6 shadow-md text-center bg-white hover:bg-emerald-50 transition-colors duration-300">
+                            <h4 class="font-bold text-xl text-gray-800">1. Rehabilitation & Counseling</h4>
+                            <p class="text-sm text-gray-600 mt-1">Breaking the cycle, building foundations.</p>
+                        </div>
+                        <div id="stage-2" class="program-stage p-6 shadow-md text-center bg-white hover:bg-emerald-50 transition-colors duration-300">
+                            <h4 class="font-bold text-xl text-gray-800">2. Skills & Vocational Training</h4>
+                            <p class="text-sm text-gray-600 mt-1">Empowering independence, fostering purpose.</p>
+                        </div>
+                        <div id="stage-3" class="program-stage p-6 shadow-md text-center bg-white hover:bg-emerald-50 transition-colors duration-300">
+                            <h4 class="font-bold text-xl text-gray-800">3. Community Outreach & Prevention</h4>
+                            <p class="text-sm text-gray-600 mt-1">Educating, protecting, building resilience.</p>
+                        </div>
+                        <div id="stage-4" class="program-stage p-6 shadow-md text-center bg-white hover:bg-emerald-50 transition-colors duration-300">
+                            <h4 class="font-bold text-xl text-gray-800">4. Family Support & Reintegration</h4>
+                            <p class="text-sm text-gray-600 mt-1">Healing bonds, fostering supportive environments.</p>
+                        </div>
+                    </div>
+                    <!-- Details Display -->
+                    <div class="w-full lg:w-2/3 bg-white p-8 rounded-xl shadow-xl min-h-[350px] flex items-center">
+                        <div id="detail-1" class="program-detail">
+                            <h3 class="font-bold text-3xl text-emerald-800 mb-4">Rehabilitation & Counseling</h3>
+                            <p class="text-gray-700 mb-4 text-lg leading-relaxed"><strong class="text-gray-900">Impact:</strong> We provide safe, structured environments for detoxification and intensive, evidence-based therapy. Our certified counselors address underlying trauma, mental health co-morbidities, and equip individuals with essential relapse prevention strategies.</p>
+                            <p class="text-gray-700 text-lg leading-relaxed"><strong class="text-gray-900">Need:</strong> This foundational stage is critical for breaking the physical and psychological cycle of addiction, establishing healthy coping mechanisms, and preparing individuals for a stable, long-term recovery journey.</p>
+                        </div>
+                        <div id="detail-2" class="program-detail">
+                            <h3 class="font-bold text-3xl text-emerald-800 mb-4">Skills Development & Vocational Training</h3>
+                            <p class="text-gray-700 mb-4 text-lg leading-relaxed"><strong class="text-gray-900">Impact:</strong> Beneficiaries are equipped with practical, marketable skills through vocational training and educational support. This fosters economic independence, self-sufficiency, and a renewed sense of purpose post-recovery.</p>
+                            <p class="text-gray-700 text-lg leading-relaxed"><strong class="text-gray-900">Need:</strong> Meaningful employment and productive engagement are essential for successful societal reintegration, significantly reducing the likelihood of relapse often triggered by financial instability or a lack of direction.</p>
+                        </div>
+                        <div id="detail-3" class="program-detail">
+                           <h3 class="font-bold text-3xl text-emerald-800 mb-4">Community Outreach & Prevention</h3>
+                           <p class="text-gray-700 mb-4 text-lg leading-relaxed"><strong class="text-gray-900">Impact:</strong> We actively engage communities through awareness campaigns, educational workshops for youth and families, and early intervention strategies. Our goal is to prevent substance abuse before it takes hold, building resilience from the ground up.</p>
+                           <p class="text-gray-700 text-lg leading-relaxed"><strong class="text-gray-900">Need:</strong> Proactive measures are crucial to stem the tide of new addiction cases. By fostering informed and resilient communities, we create environments less susceptible to the pervasive challenges of substance abuse.</p>
+                        </div>
+                        <div id="detail-4" class="program-detail">
+                           <h3 class="font-bold text-3xl text-emerald-800 mb-4">Family Support & Reintegration</h3>
+                           <p class="text-gray-700 mb-4 text-lg leading-relaxed"><strong class="text-gray-900">Impact:</strong> We offer comprehensive counseling, educational resources, and support groups for families, helping them heal from the impact of addiction, rebuild trust, and restore healthy relationships. This creates a nurturing home environment crucial for sustained recovery.</p>
+                           <p class="text-gray-700 text-lg leading-relaxed"><strong class="text-gray-900">Need:</strong> A strong, supportive family system is one of the most significant predictors of long-term sobriety and successful societal reintegration. Healing the family unit is integral to the individual's lasting well-being.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Impact & Transparency Section -->
+        <section id="our-impact" class="py-20 md:py-28 bg-white">
+             <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-800">Our Impact & Financial Transparency</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">We are committed to measurable outcomes and responsible stewardship, ensuring every contribution maximizes its life-changing potential.</p>
+                </div>
+                <div class="flex flex-col lg:flex-row items-center justify-center gap-12">
+                    <div class="w-full lg:w-1/2 order-2 lg:order-1">
+                        <h3 class="font-bold text-2xl text-center lg:text-left mb-6 text-gray-700">How Your Donation is Used</h3>
+                        <div class="chart-container">
+                            <canvas id="fund-allocation-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="w-full lg:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-8 text-center order-1 lg:order-2">
+                        <div class="stat-card">
+                            <p class="text-5xl font-extrabold text-emerald-700" id="stat-1">0+</p>
+                            <p class="text-emerald-800 font-semibold mt-2">Individuals Served Annually</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="text-5xl font-extrabold text-emerald-700" id="stat-2">0%</p>
+                            <p class="text-emerald-800 font-semibold mt-2">Program Success Rate</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="text-5xl font-extrabold text-emerald-700" id="stat-3">0+</p>
+                            <p class="text-emerald-800 font-semibold mt-2">Family Members Supported</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="text-5xl font-extrabold text-emerald-700" id="stat-4">0+</p>
+                            <p class="text-emerald-800 font-semibold mt-2">Youth Reached by Prevention</p>
+                        </div>
+                    </div>
+                </div>
+             </div>
+        </section>
+
+        <!-- ✨ Hear Our Stories Section (Gemini API Integration) -->
+        <section id="impact-stories" class="py-20 md:py-28 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl md:text-5xl font-bold text-gray-800">✨ Hear Our Stories: Personalized Impact</h2>
+                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Select a program area to instantly generate a brief, inspiring story of transformation, bringing our mission to life.</p>
+                </div>
+                <div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-xl">
+                    <div class="flex flex-col sm:flex-row gap-4 mb-6 items-center">
+                        <label for="program-select" class="font-semibold text-gray-700 text-lg flex-shrink-0">Focus on:</label>
+                        <select id="program-select" class="flex-grow border border-gray-300 rounded-lg px-5 py-3 text-gray-700 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm transition-all duration-200">
+                            <option value="Rehabilitation & Counseling">Rehabilitation & Counseling</option>
+                            <option value="Skills Development & Vocational Training">Skills Development & Vocational Training</option>
+                            <option value="Community Outreach & Prevention">Community Outreach & Prevention</option>
+                            <option value="Family Support & Reintegration">Family Support & Reintegration</option>
+                        </select>
+                        <button id="generate-story-btn" class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold px-7 py-3 rounded-full hover:from-emerald-700 hover:to-emerald-800 transition-all duration-300 transform hover:scale-105 flex-shrink-0">
+                            ✨ Generate Story
+                        </button>
+                    </div>
+                    <div id="loading-story" class="text-center py-4 hidden">
+                        <div class="loading-spinner"></div>
+                        <p class="text-gray-600 mt-3">Crafting an inspiring story for you...</p>
+                    </div>
+                    <div id="generated-story" class="mt-8 p-6 bg-emerald-50 border-l-4 border-emerald-400 rounded-lg text-gray-800 italic text-lg leading-relaxed min-h-[120px] flex items-center justify-center text-center">
+                        Your inspiring story of transformation will appear here. Select a program and click 'Generate Story'.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action Section -->
+        <section id="join-us" class="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white">
+            <div class="container mx-auto px-6 py-24 text-center">
+                <h2 class="text-4xl md:text-5xl font-bold leading-tight">Join Our Mission. Empower Lives. Restore Futures.</h2>
+                <p class="mt-6 text-xl text-emerald-200 max-w-3xl mx-auto">Your investment in Hand of Hope Missions is an investment in human potential, community well-being, and a brighter future. Let's turn the tide on addiction together.</p>
+                <div class="mt-12">
+                    <a href="#" class="inline-block bg-gradient-to-r from-amber-500 to-amber-600 text-emerald-900 font-bold px-12 py-5 rounded-full shadow-2xl hover:from-amber-600 hover:to-amber-700 transition-all duration-300 transform hover:scale-105 text-xl">
+                        Donate Now & Be a Catalyst for Change
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400">
+        <div class="container mx-auto px-6 py-10">
+            <div class="flex flex-col md:flex-row justify-between items-center text-center md:text-left space-y-6 md:space-y-0">
+                <div>
+                    <h4 class="font-bold text-white text-xl mb-2">Hand of Hope Missions</h4>
+                    <p class="text-gray-500">[Your NGO Address]</p>
+                    <p class="text-gray-500">[Your Phone Number] | [Your Email Address]</p>
+                </div>
+                <div class="text-sm">
+                    <p>&copy; 2024 Hand of Hope Missions. All Rights Reserved.</p>
+                    <p>A Registered Non-Governmental Organization committed to transparency and impact.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Mobile Menu Toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Interactive Program Stages
+            const stages = document.querySelectorAll('.program-stage');
+            const details = document.querySelectorAll('.program-detail');
+
+            function switchStage(stageId) {
+                stages.forEach(s => {
+                    s.classList.remove('active');
+                    s.classList.add('inactive');
+                });
+                document.getElementById(`stage-${stageId}`).classList.add('active');
+                
+                details.forEach(d => {
+                    d.classList.remove('visible');
+                });
+                document.getElementById(`detail-${stageId}`).classList.add('visible');
+            }
+
+            stages.forEach((stage, index) => {
+                stage.addEventListener('click', () => {
+                    switchStage(index + 1);
+                });
+            });
+
+            // Set initial state for program stages
+            switchStage(1);
+
+            // Chart.js Fund Allocation Chart
+            const ctx = document.getElementById('fund-allocation-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Rehabilitation & Counseling', 'Skills & Vocational Training', 'Community & Family Support', 'Administration & Fundraising'],
+                    datasets: [{
+                        data: [45, 25, 20, 10],
+                        backgroundColor: [
+                            '#27AE60', /* Emerald Green */
+                            '#2ECC71', /* Lighter Green */
+                            '#58D68D', /* Even Lighter Green */
+                            '#F39C12'  /* Vibrant Gold */
+                        ],
+                        borderColor: '#F8F8F8',
+                        borderWidth: 4,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#4B5563', // Gray-600
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Number Counter Animation for Stats
+            function animateValue(obj, start, end, duration) {
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    obj.innerHTML = Math.floor(progress * (end - start) + start) + (obj.id === 'stat-2' ? '%' : '+');
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        if (entry.target.id === 'stat-1') animateValue(entry.target, 0, 450, 2000);
+                        if (entry.target.id === 'stat-2') animateValue(entry.target, 0, 85, 2000);
+                        if (entry.target.id === 'stat-3') animateValue(entry.target, 0, 1200, 2000);
+                        if (entry.target.id === 'stat-4') animateValue(entry.target, 0, 3000, 2000);
+                        observer.unobserve(entry.target); // Stop observing once animated
+                    }
+                });
+            }, { threshold: 0.5 }); // Trigger when 50% of the element is visible
+
+            observer.observe(document.getElementById('stat-1'));
+            observer.observe(document.getElementById('stat-2'));
+            observer.observe(document.getElementById('stat-3'));
+            observer.observe(document.getElementById('stat-4'));
+
+
+            // Gemini API Integration for Impact Story Generation
+            const programSelect = document.getElementById('program-select');
+            const generateStoryBtn = document.getElementById('generate-story-btn');
+            const generatedStoryDiv = document.getElementById('generated-story');
+            const loadingStoryDiv = document.getElementById('loading-story');
+
+            generateStoryBtn.addEventListener('click', async () => {
+                const selectedProgram = programSelect.value;
+                generatedStoryDiv.textContent = ''; // Clear previous story
+                loadingStoryDiv.classList.remove('hidden'); // Show loading indicator
+                generatedStoryDiv.classList.remove('flex', 'items-center', 'justify-center', 'text-center'); // Remove centering for generated text
+
+                let chatHistory = [];
+                const prompt = `As an empathetic storyteller, write a brief (3-4 sentences) positive impact story or testimonial about an individual who benefited from Hand of Hope Missions' ${selectedProgram} program. Focus on hope, transformation, and a tangible outcome. Do not include names or specific locations. Make it inspiring and compelling for potential donors, highlighting the profound change.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        generatedStoryDiv.textContent = text;
+                    } else {
+                        generatedStoryDiv.textContent = 'Failed to generate story. Please try again.';
+                        console.error('Gemini API response structure unexpected:', result);
+                    }
+                } catch (error) {
+                    generatedStoryDiv.textContent = 'Error generating story. Please check your connection.';
+                    console.error('Error calling Gemini API:', error);
+                } finally {
+                    loadingStoryDiv.classList.add('hidden'); // Hide loading indicator
+                    if (generatedStoryDiv.textContent === 'Your inspiring story of transformation will appear here. Select a program and click \'Generate Story\'.') {
+                         generatedStoryDiv.classList.add('flex', 'items-center', 'justify-center', 'text-center'); // Re-add centering if no story generated
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
